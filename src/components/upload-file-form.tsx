@@ -17,10 +17,7 @@ import { Logo } from '@/components/logo';
 import { analyzeFileAction } from '@/actions/analyze-file-action';
 
 export function UploadFileForm(props: Omit<GridProps, 'asChild' | 'children'>) {
-  const [state, formAction, pending] = useActionState(
-    analyzeFileAction,
-    undefined
-  );
+  const [, formAction, pending] = useActionState(analyzeFileAction, undefined);
 
   const [file, setFile] = useState<File | null>(null);
 
@@ -50,6 +47,7 @@ export function UploadFileForm(props: Omit<GridProps, 'asChild' | 'children'>) {
               id="fullName"
               placeholder="Иванов Илья Владимирович"
               size="3"
+              disabled={pending}
               required
             />
           </Grid>
@@ -63,6 +61,7 @@ export function UploadFileForm(props: Omit<GridProps, 'asChild' | 'children'>) {
               id="group"
               placeholder="ИС-22"
               size="3"
+              disabled={pending}
               required
             />
           </Grid>
@@ -93,6 +92,7 @@ export function UploadFileForm(props: Omit<GridProps, 'asChild' | 'children'>) {
           type="file"
           accept=".doc,.docx,.pdf"
           style={{ display: 'none' }}
+          disabled={pending}
           required
           onChange={handleFileChange}
         />
