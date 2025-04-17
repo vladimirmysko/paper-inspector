@@ -1,4 +1,4 @@
-import { PrismaClient } from '@/generated/prisma';
+import { PrismaClient } from '@prisma/client';
 
 // This approach prevents multiple PrismaClient instances during development
 // See: https://www.prisma.io/docs/guides/other/troubleshooting-orm/help-articles/nextjs-prisma-client-dev-practices
