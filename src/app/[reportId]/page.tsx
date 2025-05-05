@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 
-import { Button, Flex, Grid, Heading, Table, Text } from '@radix-ui/themes';
+import { Flex, Grid, Heading, Table, Text } from '@radix-ui/themes';
 import { Logo } from '@/components/logo';
 
 import type { Metadata } from 'next';
