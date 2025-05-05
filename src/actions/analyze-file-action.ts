@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { waitUntil } from '@vercel/functions';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
@@ -116,9 +117,13 @@ export async function analyzeFileAction(
       });
     });
 
-    analyzeFile({ ...data, id: report.id }, fileArrayBuffer).catch((error) => {
-      console.error('Error analyzing file:', error);
-    });
+    waitUntil(
+      analyzeFile({ ...data, id: report.id }, fileArrayBuffer).catch(
+        (error) => {
+          console.error('Error analyzing file:', error);
+        }
+      )
+    );
 
     reportId = report.id;
   } catch (error) {
