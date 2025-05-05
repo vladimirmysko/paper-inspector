@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { prisma } from '@/lib/prisma';
+import { after } from 'next/server';
 
 const model = openai('o4-mini');
 
@@ -18,11 +19,6 @@ const uploadFileFormSchema = z.object({
 
 const analyzeFileSchema = z.object({
   report: z.object({
-    header: z
-      .string()
-      .describe(
-        'Шапка документа: ФИО студента, группа, тема работы, дата сдачи. Например: «Иванов Илья Владимирович, ИС-22, Свобода в философии Канта, 01.01.2023».'
-      ),
     finalAssessment: z
       .string()
       .describe('Итоговая оценка: балл и/или буквенный эквивалент (A–F).'),
@@ -49,6 +45,58 @@ const analyzeFileSchema = z.object({
   }),
 });
 
+async function analyzeFile(
+  data: {
+    id: string;
+    fullName: string;
+    group: string;
+    file: File;
+  },
+  fileArrayBuffer: ArrayBuffer
+) {
+  const report = await prisma.report.findUnique({
+    where: { id: data.id },
+  });
+
+  if (!report) {
+    throw new Error('Report not found');
+  }
+
+  const { object } = await generateObject({
+    model,
+    system:
+      `Вы — ассистент веб‑приложения по проверке студенческих работ по дисциплине «Философия». ` +
+      `Ваша задача — проанализировать файл с работой студента и выдать отчет о проверке.` +
+      `Используйте только русский язык.`,
+    schema: analyzeFileSchema,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'file',
+            data: fileArrayBuffer,
+            mimeType: data.file.type,
+          },
+        ],
+      },
+    ],
+  });
+
+  await prisma.report.update({
+    where: { id: report.id },
+    data: {
+      finalAssessment: object.report.finalAssessment,
+      comment: object.report.comment,
+      depthOfUnderstanding: object.report.criterion.depthOfUnderstanding,
+      argumentationAndLogic: object.report.criterion.argumentationAndLogic,
+      originalityAndCriticism: object.report.criterion.originalityAndCriticism,
+      styleAndLiteracy: object.report.criterion.styleAndLiteracy,
+      formalRequirements: object.report.criterion.formalRequirements,
+    },
+  });
+}
+
 export async function analyzeFileAction(
   _prevState: unknown,
   formData: FormData
@@ -60,40 +108,20 @@ export async function analyzeFileAction(
 
     const fileArrayBuffer = await data.file.arrayBuffer();
 
-    const { object } = await generateObject({
-      model,
-      system:
-        `Вы — ассистент веб‑приложения по проверке студенческих работ по дисциплине «Философия». ` +
-        `Ваша задача — проанализировать файл с работой студента и выдать отчет о проверке.` +
-        `Используйте только русский язык.` +
-        `Данные студента: ${data.fullName}, ${data.group}, ${new Date().toLocaleDateString()}.`,
-      schema: analyzeFileSchema,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'file',
-              data: fileArrayBuffer,
-              mimeType: data.file.type,
-            },
-          ],
+    const report = await prisma.$transaction(async (tx) => {
+      return tx.report.create({
+        data: {
+          header: `${data.fullName}, ${data.group}, ${new Date().toLocaleDateString('ru-RU', { dateStyle: 'long' })}`,
         },
-      ],
+      });
     });
 
-    const report = await prisma.report.create({
-      data: {
-        header: object.report.header,
-        finalAssessment: object.report.finalAssessment,
-        comment: object.report.comment,
-        depthOfUnderstanding: object.report.criterion.depthOfUnderstanding,
-        argumentationAndLogic: object.report.criterion.argumentationAndLogic,
-        originalityAndCriticism:
-          object.report.criterion.originalityAndCriticism,
-        styleAndLiteracy: object.report.criterion.styleAndLiteracy,
-        formalRequirements: object.report.criterion.formalRequirements,
-      },
+    after(() => {
+      analyzeFile({ ...data, id: report.id }, fileArrayBuffer).catch(
+        (error) => {
+          console.error('Error analyzing file:', error);
+        }
+      );
     });
 
     reportId = report.id;

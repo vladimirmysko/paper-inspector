@@ -90,7 +90,7 @@ export function UploadFileForm(props: Omit<GridProps, 'asChild' | 'children'>) {
           name="file"
           id="file"
           type="file"
-          accept=".doc,.docx,.pdf"
+          accept="application/pdf"
           style={{ display: 'none' }}
           disabled={pending}
           required

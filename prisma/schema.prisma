@@ -3,21 +3,22 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Report {
   id                      String   @id @default(cuid())
   createdAt               DateTime @default(now()) @map("created_at")
   header                  String
-  finalAssessment         String   @map("final_assessment")
-  comment                 String
-  depthOfUnderstanding    Int      @map("depth_of_understanding")
-  argumentationAndLogic   Int      @map("argumentation_and_logic")
-  originalityAndCriticism Int      @map("originality_and_criticism")
-  styleAndLiteracy        Int      @map("style_and_literacy")
-  formalRequirements      Int      @map("formal_requirements")
+  finalAssessment         String?  @map("final_assessment")
+  comment                 String?
+  depthOfUnderstanding    Int?     @map("depth_of_understanding")
+  argumentationAndLogic   Int?     @map("argumentation_and_logic")
+  originalityAndCriticism Int?     @map("originality_and_criticism")
+  styleAndLiteracy        Int?     @map("style_and_literacy")
+  formalRequirements      Int?     @map("formal_requirements")
 
   @@index([createdAt], name: "idx_reports_created_at")
   @@map("reports")
