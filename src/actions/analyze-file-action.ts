@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { prisma } from '@/lib/prisma';
-import { after } from 'next/server';
 
 const model = openai('o4-mini');
 
@@ -59,6 +58,7 @@ async function analyzeFile(
   });
 
   if (!report) {
+    console.error('Report not found in the database');
     throw new Error('Report not found');
   }
 
@@ -116,12 +116,8 @@ export async function analyzeFileAction(
       });
     });
 
-    after(() => {
-      analyzeFile({ ...data, id: report.id }, fileArrayBuffer).catch(
-        (error) => {
-          console.error('Error analyzing file:', error);
-        }
-      );
+    analyzeFile({ ...data, id: report.id }, fileArrayBuffer).catch((error) => {
+      console.error('Error analyzing file:', error);
     });
 
     reportId = report.id;
